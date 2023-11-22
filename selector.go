@@ -1,6 +1,10 @@
 package selector
 
-import "github.com/RoaringBitmap/roaring"
+import (
+	"errors"
+
+	"github.com/RoaringBitmap/roaring"
+)
 
 type (
 	selector struct {
@@ -11,22 +15,22 @@ type (
 	}
 
 	SetRequest struct {
-		id              uint32
-		browserListType int
-		browserList     []int
-		countryListType int
-		countryList     []int
-		deviceListType  int
-		deviceList      []int
-		osListType      int
-		osList          []int
+		ID              uint32
+		BrowserListType int
+		BrowserList     []int
+		CountryListType int
+		CountryList     []int
+		DeviceListType  int
+		DeviceList      []int
+		OsListType      int
+		OsList          []int
 	}
 
 	GetRequest struct {
-		browser int
-		country int
-		device  int
-		os      int
+		Browser int
+		Country int
+		Device  int
+		Os      int
 	}
 
 	response struct {
@@ -35,13 +39,17 @@ type (
 )
 
 var (
-	browserCode = []int{1, 2, 3, 4, 5}
-	countryCode = []int{1, 2, 3, 4, 5}
-	deviceCode  = []int{1, 2, 3, 4, 5}
-	osCode      = []int{1, 2, 3, 4, 5}
-	none        = 0
-	allowed     = 1
-	blocked     = 2
+	browserCode     = []int{1, 2, 3, 4, 5}
+	countryCode     = []int{1, 2, 3, 4, 5}
+	deviceCode      = []int{1, 2, 3, 4, 5}
+	osCode          = []int{1, 2, 3, 4, 5}
+	none            = 0
+	allowed         = 1
+	blocked         = 2
+	listTypeBrowser = 1
+	listTypeCountry = 2
+	listTypeDevice  = 3
+	listTypeOS      = 4
 )
 
 func New() *selector {
@@ -74,22 +82,107 @@ func (s *selector) init() {
 }
 
 func (s *selector) Set(data SetRequest) error {
-	// if target list not selected,
-	// set id enabled in all countries
-	if data.browserListType == none {
-		for _, v := range s.Browser {
-			v.Add(data.id)
+	var err error
+
+	if data.ID < 1 {
+		err = errors.New("id of item cant be lower than 1")
+		return err
+	}
+
+	err = s.set(
+		listTypeBrowser,
+		data.BrowserListType,
+		data.BrowserList,
+		data.ID,
+	)
+	err = s.set(
+		listTypeCountry,
+		data.CountryListType,
+		data.CountryList,
+		data.ID,
+	)
+	err = s.set(
+		listTypeDevice,
+		data.DeviceListType,
+		data.DeviceList,
+		data.ID,
+	)
+	err = s.set(
+		listTypeOS,
+		data.OsListType,
+		data.OsList,
+		data.ID,
+	)
+
+	return err
+}
+
+func (s *selector) Get(data GetRequest) ([]uint32, error) {
+	res := s.Browser[data.Browser]
+	res.And(s.Country[data.Country])
+	res.And(s.Device[data.Device])
+	res.And(s.Os[data.Os])
+
+	return res.ToArray(), nil
+}
+
+func (s *selector) set(
+	t int,
+	listType int,
+	list []int,
+	id uint32,
+) error {
+	var m map[int]*roaring.Bitmap
+
+
+	switch t {
+	case listTypeBrowser:
+		m = s.Browser
+	case listTypeCountry:
+		m = s.Country
+	case listTypeDevice:
+		m = s.Device
+	case listTypeOS:
+		m = s.Os
+	default:
+		return errors.New("undefined type")
+	}
+
+	if listType == none {
+		for _, v := range m {
+			v.Add(id)
 		}
 	}
 
-	if data.browserListType == allowed {
-		for _, v := range data.browserList {
-			s.Browser[v].Add(data.id)
+	if listType == allowed {
+		for _, v := range list {
+			m[v].Add(id)
+		}
+		for k, v := range m {
+			if !contains(list, k) {
+				v.Remove(id)
+			}
+		}
+	}
+
+	if listType == blocked {
+		for _, v := range list {
+			m[v].Remove(id)
+		}
+		for k, v := range m {
+			if !contains(list, k) {
+				v.Add(id)
+			}
 		}
 	}
 	return nil
 }
 
-func (s *selector) Get(data GetRequest) ([]uint32, error) {
-	return []uint32{}, nil
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
