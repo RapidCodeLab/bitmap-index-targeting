@@ -200,7 +200,7 @@ func TestWithBrowserBlocked(t *testing.T) {
 
 func BenchmarkSet(b *testing.B) {
 	s := selector.New()
-	itemsAmount := 9999
+	itemsAmount := 99999
 	testSet := []selector.SetRequest{}
 
 	for i := 0; i < itemsAmount; i++ {
@@ -227,7 +227,7 @@ func BenchmarkSet(b *testing.B) {
 
 func BenchmarkGet(b *testing.B) {
 	s := selector.New()
-	itemsAmount := 9999
+	itemsAmount := 99999
 
 	for i := 0; i < itemsAmount; i++ {
 		s.Set(selector.SetRequest{
