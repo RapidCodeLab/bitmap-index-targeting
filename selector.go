@@ -44,8 +44,8 @@ var (
 	deviceCode      = []int{1, 2, 3, 4, 5}
 	osCode          = []int{1, 2, 3, 4, 5}
 	none            = 0
-	allowed         = 1
-	blocked         = 2
+	Allowed         = 1
+	Blocked         = 2
 	listTypeBrowser = 1
 	listTypeCountry = 2
 	listTypeDevice  = 3
@@ -64,19 +64,19 @@ func New() *selector {
 }
 
 func (s *selector) init() {
-	for v := range browserCode {
+	for _, v := range browserCode {
 		s.Browser[v] = &roaring.Bitmap{}
 	}
 
-	for v := range countryCode {
+	for _, v := range countryCode {
 		s.Country[v] = &roaring.Bitmap{}
 	}
 
-	for v := range deviceCode {
+	for _, v := range deviceCode {
 		s.Device[v] = &roaring.Bitmap{}
 	}
 
-	for v := range osCode {
+	for _, v := range osCode {
 		s.Os[v] = &roaring.Bitmap{}
 	}
 }
@@ -134,7 +134,6 @@ func (s *selector) set(
 ) error {
 	var m map[int]*roaring.Bitmap
 
-
 	switch t {
 	case listTypeBrowser:
 		m = s.Browser
@@ -154,7 +153,7 @@ func (s *selector) set(
 		}
 	}
 
-	if listType == allowed {
+	if listType == Allowed {
 		for _, v := range list {
 			m[v].Add(id)
 		}
@@ -165,7 +164,7 @@ func (s *selector) set(
 		}
 	}
 
-	if listType == blocked {
+	if listType == Blocked {
 		for _, v := range list {
 			m[v].Remove(id)
 		}
